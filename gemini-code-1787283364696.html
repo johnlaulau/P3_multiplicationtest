@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <!-- 針對 iPad 調整視口：禁止雙擊放大、適應螢幕寬度 -->
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>小二乘法限時大挑戰</title>
     <style>
@@ -35,7 +35,7 @@
             font-size: 18px;
             color: #34495e;
         }
-        /* 針對 iPad 觸控加大輸入框與按鈕尺寸 */
+      
         input[type="text"], input[type="number"] {
             width: 85%;
             padding: 12px;
@@ -81,7 +81,7 @@
 <body>
 
 <div class="container">
-    <!-- 階段 1：輸入學號 -->
+    
     <div id="start-screen">
         <h1>乘法限時大挑戰 🚀</h1>
         <p style="font-size: 16px; color: #555;">請輸入學號開始挑戰（共 15 題）：</p>
@@ -90,7 +90,7 @@
         <button onclick="startGame()">開始挑戰</button>
     </div>
 
-    <!-- 階段 2：答題介面 -->
+   
     <div id="game-screen" class="hidden">
         <div class="info-bar">
             <span>時間：<span id="timer">05:00</span></span>
@@ -99,7 +99,7 @@
         <p style="font-size: 16px;">題目 <span id="q-num">1</span> / 15</p>
         <div class="question-box" id="question-text">7 × 8 = ?</div>
         
-        <!-- inputmode="numeric" 確保 iPad 喚起純數字鍵盤 -->
+        
         <input type="number" id="user-answer" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入答案" />
         <br><br>
         <button onclick="submitAnswer()">提交答案</button>
@@ -107,7 +107,7 @@
         <div id="hint-box" class="hint-box"></div>
     </div>
 
-    <!-- 階段 3：結算與排行榜 -->
+   
     <div id="end-screen" class="hidden">
         <h1>挑戰完成！🎉</h1>
         <p style="font-size: 18px;">學號：<span id="final-id"></span></p>
@@ -137,7 +137,7 @@
     let timerInterval = null;
     let questions = [];
 
-    // 生成 15 條題目 (數字 0 - 10)
+    
     function generateQuestions() {
         let list = [];
         for (let i = 0; i < 15; i++) {
