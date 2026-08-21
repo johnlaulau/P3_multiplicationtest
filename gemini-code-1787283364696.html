@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <!-- 針對 iPad 調整視口：禁止雙擊放大、適應螢幕寬度 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小二乘法限時大挑戰</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        h1 { color: #2c3e50; font-size: 24px; margin-bottom: 15px; }
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #34495e;
+        }
+        /* 針對 iPad 觸控加大輸入框與按鈕尺寸 */
+        input[type="text"], input[type="number"] {
+            width: 85%;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 22px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            text-align: center;
+            outline: none;
+        }
+        button {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 85%;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button:active { background-color: #27ae60; transform: scale(0.98); }
+        .question-box { font-size: 38px; font-weight: bold; margin: 20px 0; color: #2980b9; }
+        .hint-box {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 15px;
+            display: none;
+            text-align: left;
+            line-height: 1.5;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 15px; }
+        th { background-color: #34495e; color: white; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 階段 1：輸入學號 -->
+    <div id="start-screen">
+        <h1>乘法限時大挑戰 🚀</h1>
+        <p style="font-size: 16px; color: #555;">請輸入學號開始挑戰（共 15 題）：</p>
+        <input type="text" id="student-id" placeholder="例如：S01" autocomplete="off" />
+        <br><br>
+        <button onclick="startGame()">開始挑戰</button>
+    </div>
+
+    <!-- 階段 2：答題介面 -->
+    <div id="game-screen" class="hidden">
+        <div class="info-bar">
+            <span>時間：<span id="timer">05:00</span></span>
+            <span>分數：<span id="score">0</span></span>
+        </div>
+        <p style="font-size: 16px;">題目 <span id="q-num">1</span> / 15</p>
+        <div class="question-box" id="question-text">7 × 8 = ?</div>
+        
+        <!-- inputmode="numeric" 確保 iPad 喚起純數字鍵盤 -->
+        <input type="number" id="user-answer" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入答案" />
+        <br><br>
+        <button onclick="submitAnswer()">提交答案</button>
+
+        <div id="hint-box" class="hint-box"></div>
+    </div>
+
+    <!-- 階段 3：結算與排行榜 -->
+    <div id="end-screen" class="hidden">
+        <h1>挑戰完成！🎉</h1>
+        <p style="font-size: 18px;">學號：<span id="final-id"></span></p>
+        <p style="font-size: 18px; font-weight: bold; color: #27ae60;">最終得分：<span id="final-score"></span> 分</p>
+        
+        <h3>🏆 榮譽排行榜 (前 10 名)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>排名</th>
+                    <th>學號</th>
+                    <th>得分</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body"></tbody>
+        </table>
+        <br>
+        <button onclick="location.reload()">再試一次</button>
+    </div>
+</div>
+
+<script>
+    let studentId = "";
+    let currentQuestion = 0;
+    let score = 0;
+    let timeLeft = 300; // 5分鐘（300秒）
+    let timerInterval = null;
+    let questions = [];
+
+    // 生成 15 條題目 (數字 0 - 10)
+    function generateQuestions() {
+        let list = [];
+        for (let i = 0; i < 15; i++) {
+            let num1 = Math.floor(Math.random() * 11);
+            let num2 = Math.floor(Math.random() * 11);
+            list.push({ num1, num2, answer: num1 * num2 });
+        }
+        return list;
+    }
+
+    function startGame() {
+        const input = document.getElementById("student-id").value.trim();
+        if (!input) {
+            alert("請輸入學號！");
+            return;
+        }
+        studentId = input;
+        questions = generateQuestions();
+
+        document.getElementById("start-screen").classList.add("hidden");
+        document.getElementById("game-screen").classList.remove("hidden");
+
+        startTimer();
+        showQuestion();
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            let mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            let secs = (timeLeft % 60).toString().padStart(2, '0');
+            document.getElementById("timer").innerText = `${mins}:${secs}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function showQuestion() {
+        document.getElementById("hint-box").style.display = "none";
+        document.getElementById("user-answer").value = "";
+        document.getElementById("q-num").innerText = currentQuestion + 1;
+        
+        let q = questions[currentQuestion];
+        document.getElementById("question-text").innerText = `${q.num1} × ${q.num2} = ?`;
+        
+        const ansInput = document.getElementById("user-answer");
+        ansInput.focus();
+    }
+
+    function submitAnswer() {
+        const ansInput = document.getElementById("user-answer").value;
+        if (ansInput === "") return;
+
+        const userAns = parseInt(ansInput);
+        const q = questions[currentQuestion];
+        const hintBox = document.getElementById("hint-box");
+
+        if (userAns === q.answer) {
+            score += 100;
+            document.getElementById("score").innerText = score;
+            currentQuestion++;
+
+            if (currentQuestion < 15) {
+                showQuestion();
+            } else {
+                endGame();
+            }
+        } else {
+            hintBox.style.display = "block";
+            if (q.num1 === 0 || q.num2 === 0) {
+                hintBox.innerHTML = `💡 <b>提示：</b>任何數字與 <b>0</b> 相乘，答案都是 <b>0</b> 喔！再試一次！`;
+            } else {
+                hintBox.innerHTML = `💡 <b>提示：</b>${q.num1} × ${q.num2} 代表 <b>${q.num1} 個 ${q.num2} 相加</b>。<br>` +
+                                   `思考小技巧：${q.num1} × ${q.num2 - 1} = ${q.num1 * (q.num2 - 1)}，再加 ${q.num1} 是多少？`;
+            }
+        }
+    }
+
+    function endGame() {
+        clearInterval(timerInterval);
+        const timeBonus = timeLeft * 2; 
+        const totalScore = score + timeBonus;
+
+        document.getElementById("game-screen").classList.add("hidden");
+        document.getElementById("end-screen").classList.remove("hidden");
+        document.getElementById("final-id").innerText = studentId;
+        document.getElementById("final-score").innerText = `${totalScore} (含剩餘時間獎勵 +${timeBonus}分)`;
+
+        saveAndRenderLeaderboard(studentId, totalScore);
+    }
+
+    function saveAndRenderLeaderboard(id, finalScore) {
+        let board = JSON.parse(localStorage.getItem("math_leaderboard") || "[]");
+        board.push({ id, score: finalScore });
+        board.sort((a, b) => b.score - a.score);
+        board = board.slice(0, 10); // 前 10 名
+
+        localStorage.setItem("math_leaderboard", JSON.stringify(board));
+
+        const tbody = document.getElementById("leaderboard-body");
+        tbody.innerHTML = "";
+        board.forEach((item, index) => {
+            let row = `<tr>
+                <td>${index + 1}</td>
+                <td>${item.id}</td>
+                <td>${item.score}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+</script>
+
+</body>
+</html>
